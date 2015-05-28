@@ -2,6 +2,10 @@
 
 一个简单的使用 Express 4 的 Node.js 应用。
 可以运行在 LeanEngine Node.js 运行时环境。
+在官方Demo的基础上修改为支持coffeescript。   
+目前可以通过avoscloud启动，并不需要通过bash来启动了，    
+没有了avoscloud本地云函数的界面了。
+
 
 ## 本地运行
 
