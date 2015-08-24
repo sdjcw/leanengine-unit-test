@@ -3,6 +3,8 @@ path = require('path')
 domain = require('domain')
 cookieParser = require('cookie-parser')
 bodyParser = require('body-parser')
+url = require('url')
+redis = require('redis')
 todos = require('./routes/todos')
 cloud = require('./cloud')
 app = express()
@@ -34,6 +36,17 @@ app.get '/', (req, res) ->
   return
 # 可以将一类的路由单独保存在一个文件r
 app.use '/todos', todos
+
+app.get '/redis/:instance/info', (req, res, next) ->
+  instance = req.params.instance
+  host = req.query.host
+  port = req.query.port
+  require_pass = req.query.require_pass
+  client = redis.createClient(port, host)
+  client.auth(require_pass)
+  client.info (err, data) ->
+    client.quit()
+    res.send data
 
 app.get '/error', (req, res) ->
   setTimeout () ->
