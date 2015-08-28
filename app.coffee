@@ -5,8 +5,10 @@ cookieParser = require('cookie-parser')
 bodyParser = require('body-parser')
 url = require('url')
 redis = require('redis')
+async = require('async')
 todos = require('./routes/todos')
 cloud = require('./cloud')
+AV = require('leanengine')
 app = express()
 # 设置 view 引擎
 app.set 'views', path.join(__dirname, 'views')
@@ -25,7 +27,7 @@ app.use (req, res, next) ->
       res.end 'uncaughtException'
   d.run(next)
 
-app.use express.static('public')
+app.use express.static('public', {maxAge: 1000 * 3600 * 24})
 # 加载云代码方法
 app.use cloud
 app.use bodyParser.json()
@@ -36,6 +38,53 @@ app.get '/', (req, res) ->
   return
 # 可以将一类的路由单独保存在一个文件r
 app.use '/todos', todos
+
+Test1 = AV.Object.extend 'Test1'
+app.get '/createData', (req, res, next) ->
+  count = req.query.count || 20
+  result = []
+  for i in [0..count]
+    t = new Test1()
+    t.set 'v', i
+    result.push t
+  AV.Object.saveAll result,
+    success: ->
+      res.send 'ok'
+    error: (err) ->
+      res.send err
+
+app.get '/removeData', (req, res, next) ->
+  query = new AV.Query(Test1)
+  queryRemove(query).then ->
+    res.send 'ok'
+  , (err) ->
+    res.send err
+
+queryRemove = (query) ->
+  promise = new AV.Promise()
+  query.select()
+  query.limit(1000)
+  console.log 'delete start'
+
+  count = 0
+  async.doWhilst (callback) ->
+    console.log 'delete'
+    query.find().then (iterms) ->
+      count = iterms.length
+      console.log 'delete, count:', count
+      return AV.Object.destroyAll(iterms)
+    .then ->
+      callback()
+    , (err) ->
+      console.log 'err:', err
+      callback err
+  , ->
+    return count is 1000
+  , (err) ->
+    console.log 'all err:', err
+    return promise.reject(err) if err?
+    promise.resolve()
+  return promise
 
 app.get '/redis/:instance/info', (req, res, next) ->
   instance = req.params.instance
