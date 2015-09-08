@@ -9,6 +9,12 @@ async = require('async')
 todos = require('./routes/todos')
 cloud = require('./cloud')
 AV = require('leanengine')
+
+client = require('redis').createClient(27066, 'service', {auth_pass: 'Ck4HlUOGcfcRXOLHigu'})
+
+client.on 'error', (err) ->
+  console.log 'redis err: %s', err
+
 app = express()
 # 设置 view 引擎
 app.set 'views', path.join(__dirname, 'views')
@@ -86,6 +92,10 @@ queryRemove = (query) ->
     promise.resolve()
   return promise
 
+app.get '/redis/info', (req, res, next) ->
+  client.info (err, data) ->
+    res.send data
+
 app.get '/redis/:instance/info', (req, res, next) ->
   instance = req.params.instance
   host = req.query.host
@@ -125,6 +135,5 @@ app.use (err, req, res, next) ->
   res.render 'error',
     message: err.message
     error: {}
-  returnt
 
 module.exports = app
