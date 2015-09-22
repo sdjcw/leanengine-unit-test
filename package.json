@@ -22,7 +22,7 @@
     "ejs": "2.3.1",
     "express": "4.12.3",
     "leanengine": "^0.1.6",
-    "redis": "^0.12.1"
+    "redis": "^2.0.0"
   },
   "devDependencies": {
     "extend": "^3.0.0",

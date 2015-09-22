@@ -10,7 +10,7 @@ todos = require('./routes/todos')
 cloud = require('./cloud')
 AV = require('leanengine')
 
-client = require('redis').createClient(27066, 'service', {auth_pass: 'Ck4HlUOGcfcRXOLHigu'})
+client = require('redis').createClient(process.env.REDIS_URL_DeDp8JUq8)
 
 client.on 'error', (err) ->
   console.log 'redis err: %s', err
