@@ -94,5 +94,74 @@ AV.Cloud.afterDelete 'TestBiz', (req) ->
     error: (obj, err) ->
       console.log err
       assert.ifError err
+
+AV.Cloud.define 'status.topic', (request, response) ->
+  response.success('Hello world!')
+
+ComplexObject = AV.Object.extend('ComplexObject')
+
+AV.Cloud.define 'complexObject', (request, response) ->
+  query = new (AV.Query)(ComplexObject)
+  query.include 'fileColumn'
+  query.ascending 'createdAt'
+  query.find success: (results) ->
+    response.success
+      foo: 'bar'
+      i: 123
+      obj:
+        a: 'b'
+        as: [ 1, 2, 3 ]
+      t: new Date('2015-05-14T09:21:18.273Z')
+      avObject: results[0]
+      avObjects: results
+    return
+  return
+
+AV.Cloud.define 'bareAVObject', (request, response) ->
+  query = new (AV.Query)(ComplexObject)
+  query.include 'fileColumn'
+  query.ascending 'createdAt'
+  query.find success: (results) ->
+    response.success results[0]
+    return
+  return
+
+AV.Cloud.define 'AVObjects', (request, response) ->
+  query = new (AV.Query)(ComplexObject)
+  query.include 'fileColumn'
+  query.ascending 'createdAt'
+  query.find success: (results) ->
+    response.success results
+    return
+  return
+
+AV.Cloud.define 'testAVObjectParams', (request, response) ->
+  request.params.avObject.should.be.instanceof AV.Object
+  request.params.avObject.get('name').should.be.equal 'avObject'
+  request.params.avObject.get('pointerColumn').should.be.instanceof AV.User
+  request.params.avFile.should.be.instanceof AV.File
+  request.params.avObjects.forEach (object) ->
+    object.should.be.instanceof AV.Object
+    object.get('name').should.be.equal 'avObjects'
+    return
+  response.success()
+  return
+
+AV.Cloud.define 'testBareAVObjectParams', (request, response) ->
+  request.params.should.be.instanceof AV.Object
+  request.params.get('name').should.be.equal 'avObject'
+  request.params.get('avFile').should.be.instanceof AV.File
+  request.params.get('avFile').name().should.be.equal 'hello.txt'
+  response.success()
+  return
+
+AV.Cloud.define 'testAVObjectsArrayParams', (request, response) ->
+  request.params.forEach (object) ->
+    object.get('name').should.be.equal 'avObject'
+    object.get('avFile').should.be.instanceof AV.File
+    object.get('avFile').name().should.be.equal 'hello.txt'
+    return
+  response.success()
+  return
   
 module.exports = AV.Cloud
