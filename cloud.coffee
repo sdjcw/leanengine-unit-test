@@ -1,12 +1,67 @@
 AV = require('leanengine')
 assert = require('assert')
 
-###*
-# 一个简单的云代码方法
-###
-
 AV.Cloud.define 'hello', (request, response) ->
   response.success 'Hello world!'
+
+AV.Cloud.define 'testUser', (req, res) ->
+  res.success req.user
+
+AV.Cloud.define 'error', (req, res) ->
+  noThisMethod()
+  res.success()
+
+AV.Cloud.define "test", (request, response) ->
+  response.success 4.4
+
+AV.Cloud.define "testError", (request, response) ->
+  response.error "hahaha"
+
+AV.Cloud.define "testSuccess", (request, response) ->
+  response.success()
+
+AV.Cloud.define "GetDate", (request, response) ->
+  response.success new Date()
+
+AV.Cloud.define "averageStars", (request, response) ->
+  query = new AV.Query("Review")
+  query.equalTo "movie", request.params.movie
+  query.find
+    success: (results) ->
+      sum = 0
+      i = 0
+      while i < results.length
+        sum += results[i].get("stars")
+        ++i
+      response.success sum / results.length
+    error: ->
+      response.error "movie lookup failed"
+
+AV.Cloud.define "getArmor", (request, response) ->
+  query = new AV.Query("Armor")
+  query.find
+    success: (results) ->
+      response.success results[0]  if results.length > 0
+    error: ->
+      response.error "movie lookup failed"
+
+AV.Cloud.define "getArmors", (request, response) ->
+  query = new AV.Query("Armor")
+  query.find
+    success: (results) ->
+      response.success results
+    error: ->
+      response.error "movie lookup failed"
+
+AV.Cloud.define "GetSomeArmors", (request, response) ->
+  query = new AV.Query("Armor")
+  query.limit 1
+  query.skip request.params.skip
+  query.find
+    success: (results) ->
+      response.success results
+    error: ->
+      response.error "some error happended"
 
 AV.Cloud.define 'login', (req, res) ->
   username = req.params.username
@@ -20,13 +75,6 @@ AV.Cloud.define 'login', (req, res) ->
       res.success user
     error: (user, err) ->
       res.error err
-
-AV.Cloud.define 'testUser', (req, res) ->
-  res.success req.user
-
-AV.Cloud.define 'error', (req, res) ->
-  noThisMethod()
-  res.success()
 
 AV.Cloud.beforeSave 'TestBiz', (req, res) ->
   console.log 'TestBiz beforeSave'
@@ -97,6 +145,22 @@ AV.Cloud.afterDelete 'TestBiz', (req) ->
 
 AV.Cloud.define 'status.topic', (request, response) ->
   response.success('Hello world!')
+
+AV.Cloud.define "getRandomTestItem", (request, response) ->
+  query = new AV.Query("TestItem")
+  query.count
+    success: (count) ->
+      query.skip Math.round(Math.random() * count)
+      query.limit 1
+      query.find
+        success: (results) ->
+          response.success results[0]
+        error: (error) ->
+          response.error "movie lookup failed"
+    error: (error) ->
+      response.error "movie lookup failed"
+
+##### 测试 call 方法
 
 ComplexObject = AV.Object.extend('ComplexObject')
 
