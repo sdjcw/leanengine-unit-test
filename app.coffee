@@ -10,10 +10,11 @@ todos = require('./routes/todos')
 cloud = require('./cloud')
 AV = require('leanengine')
 
-client = require('redis').createClient(process.env.REDIS_URL_DeDp8JUq8)
-
-client.on 'error', (err) ->
-  console.log 'redis err: %s', err
+if process.env.NODE_ENV is 'production'
+  client = require('redis').createClient(process.env.REDIS_URL_DeDp8JUq8)
+  
+  client.on 'error', (err) ->
+    console.log 'redis err: %s', err
 
 app = express()
 # 设置 view 引擎
@@ -39,11 +40,113 @@ app.use cloud
 app.use bodyParser.json()
 app.use bodyParser.urlencoded(extended: false)
 app.use cookieParser()
+
+app.use(AV.Cloud.CookieSession({ secret: 'my secret', maxAge: 3600000, fetchUser: false }))
+
 app.get '/', (req, res) ->
   res.render 'index', currentTime: new Date
   return
 # 可以将一类的路由单独保存在一个文件r
 app.use '/todos', todos
+
+app.get '/hello', (req, res) ->
+  res.render 'hello', message: 'Congrats, you just set up your app!'
+  return
+
+app.post '/login', (req, res) ->
+  AV.User.logIn(req.body.username, req.body.password).then (->
+    res.redirect '/profile'
+    return
+  ), (error) ->
+    res.status = 500
+    res.send error
+    return
+  return
+
+app.get '/logout', (req, res) ->
+  AV.User.logOut()
+  res.redirect '/profile'
+  return
+
+app.get '/profile', (req, res) ->
+  if req.AV.user
+    res.send req.AV.user
+  else
+    res.send {}
+  return
+
+app.get '/userMatching', (req, res) ->
+  setTimeout (->
+    # 为了更加靠谱的验证串号问题，走一次网络 IO
+    query = new (AV.Query)(TestObject)
+    query.get '54b625b7e4b020bb5129fe04',
+      success: (obj) ->
+        assert.equal obj.get('foo'), 'bar'
+        res.send
+          reqUser: req.AV.user
+          currentUser: AV.User.current()
+        return
+      error: (err) ->
+        res.success
+          reqUser: req.user
+          currentUser: AV.User.current()
+        return
+    return
+  ), Math.floor(Math.random() * 2000 + 1)
+  return
+
+app.get '/runCool', (req, res) ->
+  AV.Cloud.run 'cool', { name: 'dennis' },
+    success: (result) ->
+      res.send result
+      return
+    error: (err) ->
+      res.send err
+      return
+  return
+
+app.post '/hello', (req, res) ->
+  res.render 'hello', message: 'hello,' + req.body.name
+  return
+
+app.post '/isCool', (req, res) ->
+  cool = name.isACoolName(req.body.name)
+  res.render 'hello', message: cool
+  return
+
+app.get '/time', (req, res) ->
+  res.send new Date
+  return
+
+app.get '/sources', (req, res) ->
+  fs.readdir '.', (err, data) ->
+    res.send data
+    return
+  return
+
+app.get '/path', (req, res) ->
+  res.send
+    '__filename': __filename
+    '__dirname': __dirname
+  return
+
+app.get '/throwError', (req, res) ->
+  setTimeout ->
+    noThisMethod()
+    return
+  res.send 'ok'
+  noThisMethod()
+  return
+
+app.get '/staticMiddlewareTest.html', (req, res) ->
+  res.send 'dynamic resource'
+  return
+
+app.get '/session', (req, res, next) ->
+  n = req.session.views or 0
+  req.session.views = ++n
+  res.end n + ' views'
+  return
 
 Test1 = AV.Object.extend 'Test1'
 app.get '/createData', (req, res, next) ->
